@@ -10,8 +10,10 @@ This RFC proposes a series of changes to the Rust compiler and Cargo in order
 to better support code generators. It proposes the following high level
 changes:
 
-* Add a macro to improve error messages that can be used in generated code to
-  inform the compiler where in the template file an error may have occured.
+* Add source mapping support to the compiler that allows the compiler to
+	bidirectionally associate tokens in an output rust file with one or more
+	input template files.  This then will be used to report error messages in the
+	original file.
 * Add support to `rustc` for multiple source directories, and update Cargo
   to automatically add it's `$OUT_DIR` directory to this directory.
 * Modify Cargo to enable libraries to register build scripts that remove
@@ -157,20 +159,23 @@ subject to the same "reporting errors in the generated file" that Syntex has.
 This RFC proposes three changes that will help improve Rust's code generation
 story.
 
-## Error location
-[error location]: #error-location
+## Source Mapping
+[source mapping]: #source-mapping
 
-The compiler should be extended to allow generated code to inform the following
-code was generated in a separate template file.  For example, presume we had a
-crate `queen.rs.in`,
+Because of the challenges debugging generated code, this RFC proposes that Rust
+be extended to produce and consume a file that contains a mapping from the
+input generated file to the output Rust file.   This is analogous to
+[JavaScript Source Maps](...).  Lets consider using the rustc pretty printer to
+convert one Rust source into another.  For example, consider a simple crate
+that's made up of two files.  `queen.rs`:
 
 ```rust
-mod love_candidates;
+pub mod love;
 
 pub struct Person { ... }
 ```
 
-that contained a submodule, `love_candidates.rs`:
+and it's submodule, `love.rs`:
 
 ```rust
 use super::Person;
@@ -180,12 +185,49 @@ pub fn find(people: &[Person]) -> Option<&Person> {
 }
 ```
 
+The pretty printer produces a single output file that merges the two files
+together, and would look something like this:
+
+```
+pub mod love {
+    use super::Person;
+
+    pub fn find(people: &[Person]) -> Option<&Person> {
+        people.find(|person| person.lovable())
+    }
+}
+
+pub struct Person { ... }
+```
+
+By itself, this process loses the information that the module `love`
+came from the file `love.rs`.  To avoid that, the pretty printer will
+instead generate a file, `queen.rs.map`, that contains the mapping.
+Conceptually this mapping would look something like:
+
+| dst line | dst col | source file | src line | src col | token           |
+| -------- | ------- | ----------- | -------- | ------- | --------------  |
+| 0        | 0       | "queen.rs"  | 0        | 0       | pub             |
+| 0        | 4       | "queen.rs"  | 0        | 4       | mod             |
+| 0        | 8       | "queen.rs"  | 0        | 8       | love\_canidates |
+| 0        | 24      | "queen.rs"  | 0        | 24      | ;               |
+| 2        | 0       | "love.rs"   | 0        | 0       | use             |
+
+should be able to produce
+and consume a 
+
+
+
+This file has lost 
+Unfortunately, this 
+
+
 This would be generated into `queen.rs`:
 
 ```
 set_span!("queen.rs.in", 1, 1);
-pub mod love_candidates {
-set_span!("love_candidates.rs.in", 1, 1);
+pub mod love {
+set_span!("love.rs.in", 1, 1);
     pub fn find(people: &[Person]) -> Option<&Person> {
         people.find(|person| person.lovable())
     }
