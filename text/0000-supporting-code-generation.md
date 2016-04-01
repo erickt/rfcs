@@ -1,4 +1,4 @@
-- Feature Name: `code_generation`
+- Feature Name: `source_map`, `include_dir`
 - Start Date: 2016-02-29
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -6,18 +6,15 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes a series of changes to the Rust compiler and Cargo in order
-to better support code generators. It proposes the following high level
-changes:
+This RFC proposes two changes to the Rust compiler and Cargo in order
+to better support code generators.
 
 * Add source mapping support to the compiler that allows the compiler to
-	bidirectionally associate tokens in an output rust file with one or more
-	input template files.  This then will be used to report error messages in the
-	original file.
+  bidirectionally associate tokens in an output rust file with one or more
+  input template files.  This then will be used to report error messages in the
+  original file.
 * Add support to `rustc` for multiple source directories, and update Cargo
   to automatically add it's `$OUT_DIR` directory to this directory.
-* Modify Cargo to enable libraries to register build scripts that remove
-  the need for end users to maintain their own `build.rs` scripts.
 
 # Motivation
 [motivation]: #motivation
@@ -151,12 +148,10 @@ generation:
 It is unlikely these projects would be rewritten in Rust, and so would also be
 subject to the same "reporting errors in the generated file" that Syntex has.
 
----
-
 # Detailed design
 [design]: #detailed-design
 
-This RFC proposes three changes that will help improve Rust's code generation
+This RFC proposes two changes that will help improve Rust's code generation
 story.
 
 ## Source Mapping
@@ -214,6 +209,18 @@ following mapping:
 
 This mapping will then be used by the Rust compiler during parsing to map
 tokens to their original location.
+
+Rather than Rust developing their own custom mapping file, this RFC proposes
+that Rust adopt the
+[JavaScript Source Map v3](https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k/edit)
+specification.
+
+http://www.html5rocks.com/en/tutorials/developertools/sourcemaps/
+https://hacks.mozilla.org/2013/05/compiling-to-javascript-and-debugging-with-source-maps/
+
+  This format is gaining wide adoption in tools targeting
+JavaScript, and so it would minimize the effort those projects have to take in
+order to also target Rust.
 
 This approach draws much of it's inspiration from [JavaScript Source Maps
 v3](...), which implements the same mechanism for translating arbitrary source
