@@ -215,6 +215,7 @@ that Rust adopt the
 [JavaScript Source Map v3](https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k/edit)
 specification.
 
+https://source-map.github.io/
 http://www.html5rocks.com/en/tutorials/developertools/sourcemaps/
 https://hacks.mozilla.org/2013/05/compiling-to-javascript-and-debugging-with-source-maps/
 
