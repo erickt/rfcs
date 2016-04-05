@@ -99,8 +99,6 @@ mod with_syntex {
     pub fn main() {
         let out_dir = env::var_os("OUT_DIR").unwrap();
 
-        let out_dir = env::var_os("OUT_DIR").unwrap();
-
         let src = Path::new("src/queen.rs.in");
         let dst = Path::new(&out_dir).join("queen.rs");
 
@@ -227,13 +225,27 @@ search paths, similar to GCC's `-I some-path` option, as in
 check first in the current directory, then it will iterate through each search
 path until the file is found.
 
-The exceptions to this are the `#[path="..."]` and `include!(...)` and
-related macros, which can only be used with an absolute path.  This is in order
-to remain backwards compatible with current usage.
+The exceptions to this are the `#[path="..."]`, `include!(...)` and
+related macros, which in order to remain backwards compatible, must be relative
+to the Rust entry point.  This means that if there is a directory like:
+
+```
+src/lib.rs
+src/submodule/foo.rs
+```
+
+The file `src/lib.rs` could contain:
+
+```rust
+include!("submodule/queen.rs");
+
+#[path = "submodule/queen.rs")
+mod another_queen;
+```
 
 Cargo would then be updated to add the `$OUT_DIR` first in the search path
-order.  This combined would allow users to use `mod queen;` instead of
-`include!(...)`.
+order, which would allow generated files to be referenced with `mod queen;`
+instead of `include!(...)`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -248,11 +260,9 @@ order.  This combined would allow users to use `mod queen;` instead of
 * WebAssembly is probably going to adopt a different approach to source mapping
   ([1](https://github.com/WebAssembly/design/issues/602),
   [2](https://github.com/WebAssembly/spec/issues/258),
-  [3](https://github.com/WebAssembly/blob/master/Tooling.md),
-
- to source
-  mapping than `Source Map v3`, but it hasn't been spec-ed out yet.  How can we
-  avoid being locked into a format with a potentially short lifespan?
+  [3](https://github.com/WebAssembly/blob/master/Tooling.md)),
+	but it hasn't been spec-ed out yet.  How can we avoid being locked into a
+  format with a potentially short lifespan?
  * One option is for the compiler to just ignore old Source Map files.  Since
    this is mainly used for debug info, this would just fail gracefully back to
    error locations in the generated file.
